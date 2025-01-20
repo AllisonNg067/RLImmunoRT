@@ -29,7 +29,11 @@ class TME():
             # optimum RT dose fractionation obtained should be used
             self.D = [2 for x in range(len(self.t_rad_plan))]
             if self.treatment_to_optimise == 'anti-PD-1':
-                pass
+                self.parameters[37] = np.array([0.1, 0.1, 0.1, 0.1, 0.36])
+                self.action_space = np.array([0.01*0.76*x for x in range(1, 25)])
+            else:
+                self.parameters[24] = [0.01, 0.01, 0.005, 0.005, 0.01]
+                self.action_space = np.array([0.01 * 0.04 * x for x in range(1, 25)])
         self.cumulative_dose = 0
         self.dose_fractions = 0
         self.state = np.array([self.parameters[0], 0, 0])  # C_N, C_H, D_tot
@@ -47,6 +51,10 @@ class TME():
         else:
             # optimum RT dose fractionation obtained should be used
             self.D = [2 for x in range(len(self.t_rad_plan))]
+            if self.treatment_to_optimise == 'anti-PD-1':
+                self.parameters[37] = np.array([0.1, 0.1, 0.1, 0.1, 0.36])
+            else:
+                self.parameters[24] = [0.01, 0.01, 0.005, 0.005, 0.01]
         self.cumulative_dose = 0
         self.dose_fractions = 0
         self.mode = mode
@@ -72,6 +80,29 @@ class TME():
             else:
                 # otherwise, monitor the tumour up to just before next dose fraction
                 self.t_f2 = self.t_rad_plan[self.dose_fractions + 1] + 0.95
+        elif self.treatment_to_optimise == 'anti-PD-1':
+
+            #if RT is the treatment to be optimised,
+            self.parameters[37][self.dose_fractions] = action
+            if self.dose_fractions == self.total_fractions - 2:
+                # if it is the final dose fraction, monitor tumour for 31 days post final fraction
+                self.parameters[37][-1] = 0.76 - self.cumulative_dose
+                self.t_f2 = self.t_treat_p1[-1] + 31
+                self.dose_fractions += 1
+            else:
+                # otherwise, monitor the tumour up to just before next dose fraction
+                self.t_f2 = self.t_treat_p1[self.dose_fractions + 1] + 0.95
+        else:
+            # if RT is the treatment to be optimised,
+            self.parameters[24][self.dose_fractions] = action
+            if self.dose_fractions == self.total_fractions - 2:
+                # if it is the final dose fraction, monitor tumour for 31 days post final fraction
+                self.parameters[24][-1] = 0.04 - self.cumulative_dose
+                self.t_f2 = self.t_treat_c4[-1] + 31
+                self.dose_fractions += 1
+            else:
+                # otherwise, monitor the tumour up to just before next dose fraction
+                self.t_f2 = self.t_treat_p1[self.dose_fractions + 1] + 0.95
         self.cumulative_dose += action
 
         self.dose_fractions += 1
@@ -105,6 +136,27 @@ class TME():
             else:
                 # otherwise, monitor the tumour up to just before next dose fraction
                 self.t_f2 = self.t_rad_plan[self.dose_fractions + 1] + 0.95
+        elif self.treatment_to_optimise == 'anti-PD-1':
+            #if RT is the treatment to be optimised,
+            self.parameters[37][self.dose_fractions] = action
+            if self.dose_fractions == self.total_fractions - 2:
+                # if it is the final dose fraction, monitor tumour for 31 days post final fraction
+                self.parameters[37][-1] = 0.76 - self.cumulative_dose
+                self.t_f2 = self.t_treat_p1[-1] + 31
+            else:
+                # otherwise, monitor the tumour up to just before next dose fraction
+                self.t_f2 = self.t_treat_p1[self.dose_fractions + 1] + 0.95
+        else:
+            # if RT is the treatment to be optimised,
+            self.parameters[24][self.dose_fractions] = action
+            if self.dose_fractions == self.total_fractions - 2:
+                # if it is the final dose fraction, monitor tumour for 31 days post final fraction
+                self.parameters[24][-1] = 0.04 - self.cumulative_dose
+                self.t_f2 = self.t_treat_c4[-1] + 31
+                self.dose_fractions += 1
+            else:
+                # otherwise, monitor the tumour up to just before next dose fraction
+                self.t_f2 = self.t_treat_p1[self.dose_fractions + 1] + 0.95
         self.cumulative_dose += action
         self.dose_fractions += 1
         # model tumour microenvironment
@@ -143,7 +195,25 @@ class TME():
             # otherwise obtain indices of tumour volumes between current treatment and next treatment
                 indices = np.where((self.time >= self.t_rad_plan[self.dose_fractions - 1]) & (
                         self.time <= self.t_rad_plan[self.dose_fractions] - 0.05))
+        elif self.treatment_to_optimise == 'anti-PD-1':
+            #checks if RT is the treatment to be optimised
+            if self.dose_fractions == len(self.t_treat_p1):
+            # if this is the final treatment fraction, obtain indices of tumour volumes within 31 days following last treatment
+                indices = np.where((self.time >= self.t_treat_p1[self.dose_fractions - 1]) & (self.time <= self.t_treat_p1[-1] + 31))[0]
+            else:
+            # otherwise obtain indices of tumour volumes between current treatment and next treatment
+                indices = np.where((self.time >= self.t_treat_p1[self.dose_fractions - 1]) & (
+                        self.time <= self.t_treat_p1[self.dose_fractions] - 0.05))        
+        else:
+            if self.dose_fractions == len(self.t_treat_c4):
+            # if this is the final treatment fraction, obtain indices of tumour volumes within 31 days following last treatment
+                indices = np.where((self.time >= self.t_treat_c4[self.dose_fractions - 1]) & (self.time <= self.t_treat_c4[-1] + 31))[0]
+            else:
+            # otherwise obtain indices of tumour volumes between current treatment and next treatment
+                indices = np.where((self.time >= self.t_treat_c4[self.dose_fractions - 1]) & (
+                        self.time <= self.t_treat_c4[self.dose_fractions] - 0.05))
         # extract all active tumour cell counts according to indices
+        
         self.C_trimmed = self.C[0][indices]
         if self.treatment_to_optimise == 'RT':
             if self.dose_fractions == 1:
@@ -156,6 +226,28 @@ class TME():
             # reward accounts for total dose and active tumour cell count. Lower active tumour cell counts and total dose are favourable
                 reward = -1 * self.kill_normalisation * np.min(self.C_trimmed) - self.cumulative_dose / (
                         3 * self.dose_fractions)
+        elif self.treatment_to_optimise == 'anti-PD-1':
+            if self.dose_fractions == 1:
+            # if this is the first dose fraction, calculate normalisation factor so the first reward due to cell killing is -1 (dose reward function)
+                self.kill_normalisation = 1 / np.min(self.C_trimmed)
+            if self.reward_type == 'killed':
+            # reward only accounts for active tumour cell count. Lower active tumour cell counts are favourable
+                reward = -1 * np.min(self.C_trimmed)
+            elif self.reward_type == 'dose':
+            # reward accounts for total dose and active tumour cell count. Lower active tumour cell counts and total dose are favourable
+                reward = -1 * self.kill_normalisation * np.min(self.C_trimmed) - self.cumulative_dose / (
+                        0.24 * 0.76 * self.dose_fractions)
+        else:
+            if self.dose_fractions == 1:
+            # if this is the first dose fraction, calculate normalisation factor so the first reward due to cell killing is -1 (dose reward function)
+                self.kill_normalisation = 1 / np.min(self.C_trimmed)
+            if self.reward_type == 'killed':
+            # reward only accounts for active tumour cell count. Lower active tumour cell counts are favourable
+                reward = -1 * np.min(self.C_trimmed)
+            elif self.reward_type == 'dose':
+            # reward accounts for total dose and active tumour cell count. Lower active tumour cell counts and total dose are favourable
+                reward = -1 * self.kill_normalisation * np.min(self.C_trimmed) - self.cumulative_dose / (
+                        0.24 * 0.04 * self.dose_fractions)
         return reward
 
     def inTerminalState(self):
