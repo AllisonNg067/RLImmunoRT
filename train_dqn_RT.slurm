@@ -13,6 +13,5 @@ module load py-matplotlib/3.8.1
 module load py-pandas/2.1.2
 module load py-scikit-learn/1.3.2
 #module load py-torch/2.5.1
-module load deer
 # launch serial python script
 srun python3 train_dqn_RT.py

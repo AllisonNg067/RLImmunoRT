@@ -7,15 +7,12 @@ from TMEClass import TME
 import collections
 import random
 from tensorflow.keras.optimizers import SGD, RMSprop, Adam
-from deer.learning_algos.q_net_keras import MyQNetwork
 from tensorflow.keras import backend as K  # Correct import for Keras backend
 import keras.backend as K
-from deer.agent import NeuralAgent
-import deer.experiment.base_controllers as bc
 from sklearn.model_selection import KFold
 from collections import deque
 
-reward_type = 'killed'
+reward_type = 'dose'
 action_type = 'RT'
 params = pd.read_csv('new_hypoxia_parameters.csv').values.tolist()
 env = TME(reward_type, 'DQN', action_type, params[0], range(10, 36), [10, 19], [10, 11], None, (-1,))
@@ -129,12 +126,12 @@ plt.ylabel("Sum of rewards", fontsize=14)
 plt.grid(True)
 plt.show()
 
-plt.savefig('sum of rewards dqn killed.png')
+plt.savefig('sum of rewards dqn dose.png')
 plt.figure(figsize=(8, 4))
 plt.plot(rewards)
 plt.xlabel("Episode", fontsize=14)
 plt.ylabel("Sum of rewards", fontsize=14)
 plt.grid(True)
 plt.show()
-plt.savefig('final rewards dqn killed.png')
-model.save('dqn_killed.weights.keras')
+plt.savefig('final rewards dqn dose.png')
+model.save('dqn_dose.weights.keras')
