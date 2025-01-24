@@ -8,6 +8,7 @@ class TME():
         self.reward_type = reward_type
         self.action_type = action_type
         self.parameters = parameters
+        self.parameters[0] = int(np.random.normal(loc=100000, scale=100.0, size=None))
         self.t_rad_plan = t_rad_plan
         self.t_treat_c4 = t_treat_c4
         self.t_treat_p1 = t_treat_p1
@@ -37,13 +38,15 @@ class TME():
         self.cumulative_dose = 0
         self.dose_fractions = 0
         self.state = np.array([self.parameters[0], 0, 0])  # C_N, C_H, D_tot
-        self.action_space = np.array(range(10, 30)) / 10  # Doses from 1.0 to 2.9 Gy
+        self.action_space = np.array(range(10, 31)) / 10  # Doses from 1.0 to 2.9 Gy
         self.epsilon = 0.1  # Initial epsilon value for exploration
         self.mode = mode  # -1 for training, 1 for testing
         self.agent = agent  # Store the agent instance
 
-    def reset(self, mode):
+    def reset(self, mode, seed):
         #reset the agent to starting state
+        np.random.seed(seed)
+        self.parameters[0] = int(np.random.normal(loc=100000, scale=100.0, size=None))
         self.state = np.array([self.parameters[0], 0, 0])
         if self.treatment_to_optimise == 'RT':
             #initialise RT dose
@@ -203,7 +206,7 @@ class TME():
             else:
             # otherwise obtain indices of tumour volumes between current treatment and next treatment
                 indices = np.where((self.time >= self.t_treat_p1[self.dose_fractions - 1]) & (
-                        self.time <= self.t_treat_p1[self.dose_fractions] - 0.05))        
+                        self.time <= self.t_treat_p1[self.dose_fractions] - 0.05))
         else:
             if self.dose_fractions == len(self.t_treat_c4):
             # if this is the final treatment fraction, obtain indices of tumour volumes within 31 days following last treatment
@@ -213,12 +216,12 @@ class TME():
                 indices = np.where((self.time >= self.t_treat_c4[self.dose_fractions - 1]) & (
                         self.time <= self.t_treat_c4[self.dose_fractions] - 0.05))
         # extract all active tumour cell counts according to indices
-        
+
         self.C_trimmed = self.C[0][indices]
         if self.treatment_to_optimise == 'RT':
             if self.dose_fractions == 1:
             # if this is the first dose fraction, calculate normalisation factor so the first reward due to cell killing is -1 (dose reward function)
-                self.kill_normalisation = 1 / np.min(self.C_trimmed)
+                self.kill_normalisation = 1 / 400000
             if self.reward_type == 'killed':
             # reward only accounts for active tumour cell count. Lower active tumour cell counts are favourable
                 reward = -1 * np.min(self.C_trimmed)

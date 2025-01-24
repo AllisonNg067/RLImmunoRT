@@ -92,7 +92,7 @@ def markov_TCP_analysis(im_death, prol, C, delta_t):
     cell_num = int(np.rint(C))
     # print("cell coubt", cell_num)
     f = prol * delta_t  # Birth probability
-    g = im_death * delta_t  # Dead probability
+    g = max(0, im_death * delta_t)  # Dead probability
 
     e = f + g
 

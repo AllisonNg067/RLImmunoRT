@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #SBATCH --job-name=varyIORatio
-#SBATCH --nodes=1
+#SBATCH --nodes=6
 #SBATCH --tasks-per-node=10
 #SBATCH --cpus-per-task=10
-#SBATCH --time=01:00:00
+#SBATCH --time=24:00:00
 #SBATCH --mail-user=23303755@student.uwa.edu.au
 #SBATCH --mail-type=ALL
 # load modules
@@ -12,8 +12,7 @@ module load py-numpy/1.26.1
 module load py-matplotlib/3.8.1
 module load py-pandas/2.1.2
 module load py-scikit-learn/1.3.2
-module load py-torch/2.5.1
+#module load py-torch/2.5.1
 module load deer
-module load 
 # launch serial python script
-srun python3 test_network.py
+srun python3 train_dqn_RT.py
