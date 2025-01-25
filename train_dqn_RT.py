@@ -12,7 +12,7 @@ import keras.backend as K
 from sklearn.model_selection import KFold
 from collections import deque
 
-reward_type = 'killed'
+reward_type = 'dose'
 action_type = 'RT'
 params = pd.read_csv('new_hypoxia_parameters.csv').values.tolist()
 env = TME(reward_type, 'DQN', action_type, params[0], range(10, 36), [10, 19], [10, 11], None, (-1,))
@@ -114,6 +114,9 @@ for episode in range(9200):
     if episode > 99:
         training_step(batch_size)
 
+import pickle
+with open('replay_buffer_dqn_dose.pkl', 'wb') as f:
+    pickle.dump(replay_buffer, f)
 model.set_weights(best_weights)  # extra code – restores the best model weights
 
 # we expect len(replay_buffer) to be 2000 afeter 600 episodes
@@ -126,12 +129,12 @@ plt.ylabel("Sum of rewards", fontsize=14)
 plt.grid(True)
 plt.show()
 
-plt.savefig('sum of rewards dqn killed.png')
+plt.savefig('sum of rewards dqn dose.png')
 plt.figure(figsize=(8, 4))
 plt.plot(final_rewards)
 plt.xlabel("Episode", fontsize=14)
 plt.ylabel("Sum of rewards", fontsize=14)
 plt.grid(True)
 plt.show()
-plt.savefig('final rewards dqn killed.png')
-model.save('dqn_killed.weights.keras')
+plt.savefig('final rewards dqn dose.png')
+model.save('dqn_dose.weights.keras')
