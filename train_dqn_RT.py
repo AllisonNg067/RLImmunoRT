@@ -94,7 +94,7 @@ for episode in range(9200):
     #print('obs', obs)
     total_reward = 0
     for step in range(26):
-        epsilon = max(1 - episode / 500, 0.01)
+        epsilon = max(1 - episode / 9000, 0.01)
         obs, reward, done = play_one_step(env, obs, epsilon)
         total_reward += reward
         if done:
@@ -115,8 +115,15 @@ for episode in range(9200):
         training_step(batch_size)
 
 import pickle
-with open('replay_buffer_dqn_dose.pkl', 'wb') as f:
+with open('replay_buffer_dqn_dose_smaller_epsilon_decay.pkl', 'wb') as f:
     pickle.dump(replay_buffer, f)
+
+with open('train_reward_dqn_dose_smaller_epsilon_decay.pkl', 'wb') as f:
+    pickle.dump(rewards, f)
+
+with open('train_final_reward_dqn_dose_smaller_epsilon_decay.pkl', 'wb') as f:
+    pickle.dump(final_rewards, f)
+
 model.set_weights(best_weights)  # extra code – restores the best model weights
 
 # we expect len(replay_buffer) to be 2000 afeter 600 episodes
@@ -129,12 +136,12 @@ plt.ylabel("Sum of rewards", fontsize=14)
 plt.grid(True)
 plt.show()
 
-plt.savefig('sum of rewards dqn dose.png')
+plt.savefig('sum of rewards dqn dose smaller epsilon decay.png')
 plt.figure(figsize=(8, 4))
 plt.plot(final_rewards)
 plt.xlabel("Episode", fontsize=14)
-plt.ylabel("Sum of rewards", fontsize=14)
+plt.ylabel("Final Reward", fontsize=14)
 plt.grid(True)
 plt.show()
-plt.savefig('final rewards dqn dose.png')
-model.save('dqn_dose.weights.keras')
+plt.savefig('final rewards dqn dose smaller epsilon decay.png')
+model.save('dqn_dose_smaller_epsilon_decay.weights.keras')
