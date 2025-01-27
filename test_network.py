@@ -25,14 +25,14 @@ params = pd.read_csv('new_hypoxia_parameters.csv').values.tolist()
 initial_cell_count = 100000
 param = params[0]
 param[0] = initial_cell_count
-reward_type = 'killed'
+reward_type = 'dose'
 action_type = 'RT'
 double_Q = False
 if double_Q:
     network_type = 'ddqn'
 else:
     network_type = 'dqn'
-model.load_weights('dqn_killed.weights.keras')
+model.load_weights('dqn_dose_smaller_epsilon_decay.weights.keras')
 def predict_one_episode(policy, env, n_max_steps=26, seed=42):
     '''
     This function predicts the entire episode using the given policy.
@@ -61,6 +61,7 @@ def predict_one_episode(policy, env, n_max_steps=26, seed=42):
                 #plt.savefig('optimal dose per fraction ' + action_type + reward_type + ' ' + str(counter) + '.png')
                 # plt.show()
                 result = [np.exp(reward), schedule]
+                break
     return tot_reward, result, doses
 
 
@@ -77,8 +78,9 @@ def epsilon_greedy_policy(state, epsilon=0, testing=False):
 
 rewards = []
 Nepisodes = 100
-seeds = range(42, Nepisodes+42)
+seeds = range(9200, Nepisodes+9200)
 results = []
+schedules = []
 for seed in seeds:
     env = TME(reward_type, 'DQN', action_type, params[0], range(10, 36), [10, 19], [10, 11], None, (-1,))
     env.reset(1, seed=seed)
@@ -86,6 +88,7 @@ for seed in seeds:
     print('result', result)
     rewards += [reward]
     results.append(result)
+    schedules.append(doses)
 
 print(f'For the {Nepisodes} episodes:')
 print(f'Minimum reward = {np.min(rewards)}')
@@ -96,26 +99,29 @@ print(f'Number of rewards above the average value =', np.sum(rewards > np.mean(r
 print(results)
 dataFrame = pd.DataFrame(results, columns=["TCP", "RT Dose Schedule"])
 print(dataFrame)
-max_length = max(len(lst) for lst in doses)
-padded_schedules = [lst + [np.nan] * (max_length - len(lst)) for lst in doses]
+dataFrame.to_csv('smaller epsilon decay results ' + action_type + ' ' + reward_type + ' ' + network_type + '.csv', index=False)
+max_length = max(len(lst) for lst in schedules)
+padded_schedules = [lst + [np.nan] * (max_length - len(lst)) for lst in schedules]
 padded_schedules = np.array(padded_schedules)
 mean_dose = np.nanmean(padded_schedules, axis=0)
 std_dose = np.nanstd(padded_schedules, axis=0)
 # Plot with error bars
+plt.figure()
 plt.errorbar(range(len(mean_dose)), mean_dose, yerr=std_dose, fmt='o', ecolor='#0e4a41', capsize=5, color='#0e4a41')
 plt.plot(range(len(mean_dose)), mean_dose, color='#0e4a41')  # Line connecting the points
 plt.scatter(range(len(mean_dose)), mean_dose, color='#0e4a41')  # Mark points clearly
 plt.xlabel('RT Fraction Number')
 plt.ylabel('Dose (Gy)')
-plt.title('Optimal ' + action_type + ' Dose per Fraction Using ' + network_type)
-plt.savefig('optimal dose per fraction ' + action_type + ' ' + reward_type + ' ' + network_type + '.png')
+plt.title('Optimal ' + action_type + ' Dose per Fraction')
+plt.savefig('smaller epsilon decay optimal dose per fraction ' + action_type + ' ' + reward_type + ' ' + network_type + '.png')
 #f = open('mean TCP ' + action_type + reward_type + '.txt', 'w')
 #f.write("mean TCP " + str(np.mean(dataFrame['TCP'])))
 print("mean TCP " + str(np.mean(dataFrame['TCP'])))
+plt.figure()
 plt.bar(np.arange(Nepisodes), np.array(rewards))
 plt.plot([0, Nepisodes], np.mean(rewards)*np.ones(2,), 'r-', label='average reward')
 plt.legend(loc='lower right')
 plt.xlabel('Episode')
 plt.ylabel('Reward')
 plt.show()
-plt.savefig('barplot total rewards ' + action_type + ' ' + reward_type + ' ' + network_type + '.png')
+plt.savefig('smaller epsilon decay barplot total rewards ' + action_type + ' ' + reward_type + ' ' + network_type + '.png')
