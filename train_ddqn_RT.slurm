@@ -1,9 +1,9 @@
 #!/bin/bash -l
-#SBATCH --job-name=varyIORatio
+#SBATCH --job-name=trainDDQN
 #SBATCH --nodes=6
 #SBATCH --tasks-per-node=10
 #SBATCH --cpus-per-task=10
-#SBATCH --time=01:00:00
+#SBATCH --time=24:00:00
 #SBATCH --mail-user=23303755@student.uwa.edu.au
 #SBATCH --mail-type=ALL
 # load modules
@@ -14,4 +14,4 @@ module load py-pandas/2.1.2
 module load py-scikit-learn/1.3.2
 #module load py-torch/2.5.1
 # launch serial python script
-srun python3 train_dqn_RT.py
+srun python3 train_ddqn_RT.py

@@ -36,12 +36,45 @@ tf.random.set_seed(42)
 rewards = []
 best_score = 0
 
-batch_size = 2
+batch_size = 32
 discount_factor = 0.95
 optimizer = tf.keras.optimizers.Nadam(learning_rate=1e-2)
 loss_fn =  tf.keras.losses.MeanSquaredError()
 
 replay_buffer = deque(maxlen=2000)  # resets the replay buffer
+
+def play_one_step(env, state, epsilon):
+    action = epsilon_greedy_policy(state, epsilon)
+
+    next_state, reward, done = env.step(action)
+    #print(next_state)
+    replay_buffer.append((state, action, reward, next_state, done))
+    #print('buffer length',  len(replay_buffer))
+    return next_state, reward, done
+
+def sample_experiences(batch_size):
+    indices = np.random.randint(len(replay_buffer), size=batch_size)
+    batch = [replay_buffer[index] for index in indices]
+    return [
+        np.array([experience[field_index] for experience in batch])
+        for field_index in range(5)
+    ]  # [states, actions, rewards, next_states, dones]
+
+def epsilon_greedy_policy(state, treatment_to_optimise, epsilon=0, testing=False):
+    if treatment_to_optimise == 'RT':
+      doses = np.array(range(10, 31)) / 10
+    elif treatment_to_optimise == 'anti-PD-1':
+      doses = np.array([0.01*0.76*x for x in range(1, 25)])
+    else:
+      doses = np.array([0.01*0.04*x for x in range(1, 25)])
+    if np.random.rand() < epsilon:
+        return np.random.randint(n_outputs)  # random action
+    else:
+        Q_values = model.predict(state[np.newaxis], verbose=0)[0]
+        if not testing:
+          return Q_values.argmax()  # optimal action according to the DQN
+        else:
+          return Q_values.argmax(), doses[Q_values.argmax()]
 
 def training_step(batch_size):
     experiences = sample_experiences(batch_size)
@@ -62,7 +95,8 @@ def training_step(batch_size):
 
 rewards = []
 final_rewards = []
-for episode in range(12):
+for episode in range(7000):
+      #treatment_res_list = data_PD[(data_PD['RT Treatment Days'] == str(t_treat_rad_optimal)) & (data_PD['anti-PD-1 Treatment Days'] == str(t_treat_p1_optimal))].values.tolist()[0]
     total_reward = 0
     obs = env.reset(-1, seed=episode)
     for step in range(26):
@@ -82,9 +116,9 @@ for episode in range(12):
         best_weights = model.get_weights()
         best_score = step
 
-    if episode > 0:
+    if episode > 99:
         training_step(batch_size)
-        if episode % 2 == 0:                        # <= CHANGED
+        if episode % 10 == 0:                        # <= CHANGED
             target.set_weights(model.get_weights())  # <= CHANGED
 
     # Alternatively, you can do soft updates at each step:
@@ -96,6 +130,15 @@ for episode in range(12):
         #    target_weights[index] = (0.99 * target_weights[index]
         #                             + 0.01 * online_weight)
         #target.set_weights(target_weights)
+import pickle
+with open('replay_buffer_ddqn_dose.pkl', 'wb') as f:
+    pickle.dump(replay_buffer, f)
+
+with open('train_reward_ddqn_dose_smaller_epsilon_decay.pkl', 'wb') as f:
+    pickle.dump(rewards, f)
+
+with open('train_final_reward_ddqn_dose_smaller_epsilon_decay.pkl', 'wb') as f:
+    pickle.dump(final_rewards, f)
 
 model.set_weights(best_weights)  # extra code – restores the best model weights
 
@@ -109,9 +152,9 @@ plt.show()
 plt.savefig('sum of rewards ddqn dose.png')
 
 plt.figure(figsize=(8, 4))
-plt.plot(rewards)
+plt.plot(final_rewards)
 plt.xlabel("Episode", fontsize=14)
-plt.ylabel("Sum of rewards", fontsize=14)
+plt.ylabel("Final rewards", fontsize=14)
 plt.grid(True)
 plt.show()
 plt.savefig('final rewards ddqn dose.png')
