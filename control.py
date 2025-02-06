@@ -55,21 +55,6 @@ def test_network(reward_type, action_type, env, sample_size=100):
     file_name = 'control RT.csv'
     dataFrame.to_csv(file_name, index=False)
     #print(results)
-    # Find the length of the longest list
-    max_length = max(len(lst) for lst in doses)
-# Pad the lists with 'nan' at the end
-    padded_schedules = [lst + [np.nan] * (max_length - len(lst)) for lst in doses]   
-    padded_schedules = np.array(padded_schedules)
-    mean_dose = np.nanmean(padded_schedules, axis=0)
-    std_dose = np.nanstd(padded_schedules, axis=0)
-    # Plot with error bars
-    plt.errorbar(range(len(mean_dose)), mean_dose, yerr=std_dose, fmt='o', ecolor='#0e4a41', capsize=5, color='#0e4a41')
-    plt.plot(range(len(mean_dose)), mean_dose, color='#0e4a41')  # Line connecting the points
-    plt.scatter(range(len(mean_dose)), mean_dose, color='#0e4a41')  # Mark points clearly
-    plt.xlabel('RT Fraction Number')
-    plt.ylabel('Dose (Gy)')
-    plt.title('Optimal ' + action_type + ' Dose per Fraction Using ' + network_type)
-    #plt.savefig('optimal dose per fraction ' + action_type + ' ' + reward_type + ' ' + network_type + '.png')
     f = open('mean TCP control.txt', 'w')
     f.write("mean TCP " + str(np.mean(dataFrame['TCP'])))
     print("mean TCP " + str(np.mean(dataFrame['TCP'])))
