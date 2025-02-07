@@ -12,7 +12,7 @@ import keras.backend as K
 from sklearn.model_selection import KFold
 from collections import deque
 
-reward_type = 'killed'
+reward_type = 'dose'
 action_type = 'RT'
 params = pd.read_csv('new_hypoxia_parameters.csv').values.tolist()
 env = TME(reward_type, 'DQN', action_type, params[0], range(10, 36), [10, 15], [10, 11], None, (-1,))
@@ -36,16 +36,16 @@ else:
 def epsilon_greedy_policy(state, epsilon=0, testing=False):
     doses = np.array(range(10, 31)) / 10
     if np.random.rand() < epsilon:
-        return np.random.randint(n_outputs)  # random action
+        return np.random.randint(n_outputs), model.predict(state[np.newaxis], verbose=0)[0]  # random action
     else:
         Q_values = model.predict(state[np.newaxis], verbose=0)[0]
         if not testing:
-          if epsilon == 0.01:
-              print('state', state)
-              print('Q', Q_values)
-          return Q_values.argmax()  # optimal action according to the DQN
+          #if epsilon == 0.01:
+              #print('state', state)
+              #print('Q', Q_values)
+            return Q_values.argmax(), Q_values  # optimal action according to the DQN
         else:
-          return Q_values.argmax(), doses[Q_values.argmax()]
+            return Q_values.argmax(), doses[Q_values.argmax()]
 
 replay_buffer = deque(maxlen=2000)
 def sample_experiences(batch_size):
@@ -64,7 +64,7 @@ def sample_experiences(batch_size):
     )
 
 def play_one_step(env, state, epsilon):
-    action = epsilon_greedy_policy(state, epsilon)
+    action, Q = epsilon_greedy_policy(state, epsilon)
 
     next_state, reward, done = env.step(action)
     #print(next_state)
@@ -105,7 +105,7 @@ discount_factor = 0.95
 optimizer = tf.keras.optimizers.Nadam(learning_rate=1e-5)
 final_rewards = []
 loss_fn = tf.keras.losses.MeanSquaredError()
-for episode in range(16000):
+for episode in range(16800):
     obs = env.reset(-1, episode)
     obs = tf.convert_to_tensor(obs, dtype=tf.float32)
     #print('obs', obs)
@@ -113,6 +113,8 @@ for episode in range(16000):
     for step in range(26):
         epsilon = max(1 - episode / 9000, 0.01)
         obs, reward, done = play_one_step(env, obs, epsilon)
+        if episode >= 16798:
+            print('Q', epsilon_greedy_policy(obs))
         total_reward += reward
         if done:
             break
@@ -130,7 +132,7 @@ for episode in range(16000):
 
     if episode > 100:
         training_step(batch_size)
-
+    
 import pickle
 with open('replay_buffer_' + action_type + '_dqn_' + reward_type + '.pkl', 'wb') as f:
     pickle.dump(replay_buffer, f)
@@ -162,3 +164,4 @@ plt.savefig('final rewards ' + action_type + ' dqn ' + reward_type + '.png')
 model.compile(optimizer='adam', loss='mse')
 model.save('dqn_dose_' + action_type + '_dqn_' + reward_type + '.weights.keras')
 print('model trained and saved successfully')
+
