@@ -12,7 +12,7 @@ import keras.backend as K
 from sklearn.model_selection import KFold
 from collections import deque
 
-reward_type = 'dose'
+reward_type = 'killed'
 action_type = 'RT'
 params = pd.read_csv('new_hypoxia_parameters.csv').values.tolist()
 env = TME(reward_type, 'DQN', action_type, params[0], range(10, 36), [10, 15], [10, 11], None, (-1,))
@@ -105,7 +105,7 @@ discount_factor = 0.95
 optimizer = tf.keras.optimizers.Nadam(learning_rate=1e-5)
 final_rewards = []
 loss_fn = tf.keras.losses.MeanSquaredError()
-for episode in range(16800):
+for episode in range(8000):
     obs = env.reset(-1, episode)
     obs = tf.convert_to_tensor(obs, dtype=tf.float32)
     #print('obs', obs)
@@ -113,7 +113,7 @@ for episode in range(16800):
     for step in range(26):
         epsilon = max(1 - episode / 9000, 0.01)
         obs, reward, done = play_one_step(env, obs, epsilon)
-        if episode >= 16798:
+        if episode >= 7980:
             print('Q', epsilon_greedy_policy(obs))
         total_reward += reward
         if done:

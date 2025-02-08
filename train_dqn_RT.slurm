@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH --job-name=GPUtrainDQN
-#SBATCH --partition=gpu
+#SBATCH --partition=gpu-highmem
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:1
 #SBATCH --account=pawsey1166-gpu
