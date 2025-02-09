@@ -254,7 +254,7 @@ class TME():
         return reward
 
     def inTerminalState(self):
-        if self.C[0][-1] == 0:
+        if self.C[0][-1] <= 10**-8:
             # state is terminal if all active tumour cells are killed
             return True
         elif self.dose_fractions == self.total_fractions:
