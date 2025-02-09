@@ -12,7 +12,7 @@ import keras.backend as K
 from sklearn.model_selection import KFold
 from collections import deque
 
-reward_type = 'killed'
+reward_type = 'dose'
 action_type = 'RT'
 params = pd.read_csv('new_hypoxia_parameters.csv').values.tolist()
 env = TME(reward_type, 'DQN', action_type, params[0], range(10, 36), [10, 15], [10, 11], None, (-1,))
@@ -20,6 +20,14 @@ tf.random.set_seed(42)  # extra code – ensures reproducibility on the CPU
 
 input_shape = [3]  # == env.observation_space.shape
 n_outputs = 21  # == env.action_space.n
+
+#model = tf.keras.Sequential([
+#    tf.keras.layers.Input(shape=input_shape),
+#    tf.keras.layers.Dense(32, activation="elu"),
+#    tf.keras.layers.Dense(32, activation="elu"),
+#    tf.keras.layers.Dense(n_outputs, activation="relu"),
+#    tf.keras.layers.Rescaling(-1.0)
+#])
 
 model = tf.keras.Sequential([
     tf.keras.layers.Input(shape=input_shape),
@@ -95,6 +103,9 @@ def training_step(batch_size):
     grads = tape.gradient(loss, model.trainable_variables)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
+def exploration_probability(episode, explore=0):
+    return min(1, max(1 - (episode - explore)/9000, 0.01))
+
 replay_buffer = deque(maxlen=2000)
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -104,16 +115,19 @@ batch_size = 32
 discount_factor = 0.95
 optimizer = tf.keras.optimizers.Nadam(learning_rate=1e-5)
 final_rewards = []
+episodes_before_train = 100
 loss_fn = tf.keras.losses.MeanSquaredError()
-for episode in range(8000):
+for episode in range(10000):
     obs = env.reset(-1, episode)
     obs = tf.convert_to_tensor(obs, dtype=tf.float32)
     #print('obs', obs)
     total_reward = 0
     for step in range(26):
-        epsilon = max(1 - episode / 9000, 0.01)
+        epsilon = exploration_probability(episode, explore=episodes_before_train)
         obs, reward, done = play_one_step(env, obs, epsilon)
-        if episode >= 7980:
+        if episode >= 9998:
+            print('state', obs)
+            print('reward', reward)
             print('Q', epsilon_greedy_policy(obs))
         total_reward += reward
         if done:
@@ -130,7 +144,7 @@ for episode in range(8000):
         best_weights = model.get_weights()
         best_score = step
 
-    if episode > 100:
+    if episode >= episodes_before_train:
         training_step(batch_size)
     
 import pickle
