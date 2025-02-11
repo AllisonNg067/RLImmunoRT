@@ -1,17 +1,21 @@
 #!/bin/bash -l
-#SBATCH --job-name=trainDDQN
-#SBATCH --nodes=6
-#SBATCH --tasks-per-node=10
-#SBATCH --cpus-per-task=10
+#SBATCH --job-name=GPUtrainDDQN
+#SBATCH --partition=gpu-highmem
+#SBATCH --nodes=1
+#SBATCH --gres=gpu:1
+#SBATCH --account=pawsey1166-gpu
 #SBATCH --time=24:00:00
 #SBATCH --mail-user=23303755@student.uwa.edu.au
 #SBATCH --mail-type=ALL
+
 # load modules
-module load python/3.11.6
-module load py-numpy/1.26.1
-module load py-matplotlib/3.8.1
-module load py-pandas/2.1.2
-module load py-scikit-learn/1.3.2
-#module load py-torch/2.5.1
+module load rocm
+# Unload conflicting modules
+module unload python
+
+# Load necessary modules
+module load tensorflow/rocm5.6-tf2.12
+#python3 -m pip install --user matplotlib numpy pandas scikit-learn
 # launch serial python script
-srun python3 train_ddqn_RT.py
+export OMP_NUM_THREADS=1
+python3 train_ddqn_RT.py
