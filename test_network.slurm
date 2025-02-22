@@ -7,13 +7,13 @@
 #SBATCH --mail-user=23303755@student.uwa.edu.au
 #SBATCH --mail-type=ALL
 # load modules
-module load python/3.11.6
-module load py-numpy/1.26.1
-module load py-matplotlib/3.8.1
-module load py-pandas/2.1.2
-module load py-scikit-learn/1.3.2
-module load py-torch/2.5.1
-module load deer
-module load 
+module load rocm
+# Unload conflicting modules
+module unload python
+
+# Load necessary modules
+module load tensorflow/rocm5.6-tf2.12
+#python3 -m pip install --user matplotlib numpy pandas scikit-learn
 # launch serial python script
-srun python3 test_network.py
+
+python3 test_network.py

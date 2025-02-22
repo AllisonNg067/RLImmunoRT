@@ -12,7 +12,11 @@ from sklearn.model_selection import KFold
 import tensorflow as tf
 tf.random.set_seed(42)  # extra code – ensures reproducibility on the CPU
 
-input_shape = [3]  # == env.observation_space.shape
+reward_type = 'killed'
+if reward_type == 'dose':
+    input_shape = [3]  # == env.observation_space.shape
+else:
+    input_shape = [2]
 n_outputs = 21  # == env.action_space.n
 
 model = tf.keras.Sequential([
@@ -25,14 +29,15 @@ params = pd.read_csv('new_hypoxia_parameters.csv').values.tolist()
 initial_cell_count = 100000
 param = params[0]
 param[0] = initial_cell_count
-reward_type = 'dose'
+
 action_type = 'RT'
 double_Q = False
 if double_Q:
     network_type = 'ddqn'
 else:
     network_type = 'dqn'
-model.load_weights('dqn_dose_smaller_epsilon_decay.weights.keras')
+model.load_weights(action_type + '_' + network_type + '_' + reward_type + '_more_exploration.weights.keras')
+#model.load_weights('ddqn_dose.weights.keras')
 def predict_one_episode(policy, env, n_max_steps=26, seed=42):
     '''
     This function predicts the entire episode using the given policy.
@@ -62,7 +67,7 @@ def predict_one_episode(policy, env, n_max_steps=26, seed=42):
                 # plt.show()
                 result = [np.exp(reward), schedule]
                 break
-    return tot_reward, result, doses
+    return tot_reward, result, schedule
 
 
 def epsilon_greedy_policy(state, epsilon=0, testing=False):
@@ -71,6 +76,8 @@ def epsilon_greedy_policy(state, epsilon=0, testing=False):
         return np.random.randint(n_outputs)  # random action
     else:
         Q_values = model.predict(state[np.newaxis], verbose=0)[0]
+        print('state', state)
+        print('Q', Q_values)
         if not testing:
           return Q_values.argmax()  # optimal action according to the DQN
         else:
@@ -78,7 +85,7 @@ def epsilon_greedy_policy(state, epsilon=0, testing=False):
 
 rewards = []
 Nepisodes = 100
-seeds = range(9200, Nepisodes+9200)
+seeds = range(100000, Nepisodes+100000)
 results = []
 schedules = []
 for seed in seeds:
@@ -99,7 +106,7 @@ print(f'Number of rewards above the average value =', np.sum(rewards > np.mean(r
 print(results)
 dataFrame = pd.DataFrame(results, columns=["TCP", "RT Dose Schedule"])
 print(dataFrame)
-dataFrame.to_csv('smaller epsilon decay results ' + action_type + ' ' + reward_type + ' ' + network_type + '.csv', index=False)
+dataFrame.to_csv('more exploration results ' + action_type + ' ' + reward_type + ' ' + network_type + '.csv', index=False)
 max_length = max(len(lst) for lst in schedules)
 padded_schedules = [lst + [np.nan] * (max_length - len(lst)) for lst in schedules]
 padded_schedules = np.array(padded_schedules)
@@ -113,7 +120,7 @@ plt.scatter(range(len(mean_dose)), mean_dose, color='#0e4a41')  # Mark points cl
 plt.xlabel('RT Fraction Number')
 plt.ylabel('Dose (Gy)')
 plt.title('Optimal ' + action_type + ' Dose per Fraction')
-plt.savefig('smaller epsilon decay optimal dose per fraction ' + action_type + ' ' + reward_type + ' ' + network_type + '.png')
+plt.savefig('more exploration optimal dose per fraction ' + action_type + ' ' + reward_type + ' ' + network_type + '.png')
 #f = open('mean TCP ' + action_type + reward_type + '.txt', 'w')
 #f.write("mean TCP " + str(np.mean(dataFrame['TCP'])))
 print("mean TCP " + str(np.mean(dataFrame['TCP'])))
@@ -124,4 +131,4 @@ plt.legend(loc='lower right')
 plt.xlabel('Episode')
 plt.ylabel('Reward')
 plt.show()
-plt.savefig('smaller epsilon decay barplot total rewards ' + action_type + ' ' + reward_type + ' ' + network_type + '.png')
+plt.savefig('more exploration barplot total rewards ' + action_type + ' ' + reward_type + ' ' + network_type + '.png')
