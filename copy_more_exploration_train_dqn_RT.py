@@ -103,13 +103,13 @@ best_score = 0
 batch_size = 32
 discount_factor = 0.95
 optimizer = tf.keras.optimizers.Nadam(learning_rate=1e-5)
-with open('train_reward_' + action_type + '_dqn_' + reward_type + '_more_exploration.pkl', 'rb') as f:
-    rewards = pickle.load(f)
+#with open('train_reward_' + action_type + '_dqn_' + reward_type + '_more_exploration.pkl', 'rb') as f:
+    #rewards = pickle.load(f)
 
-with open('train_final_reward_' + action_type + '_dqn_' + reward_type + '_more_exploration.pkl', 'rb') as f:
-    final_rewards = pickle.load(f)
+#with open('train_final_reward_' + action_type + '_dqn_' + reward_type + '_more_exploration.pkl', 'rb') as f:
+    #final_rewards = pickle.load(f)
 loss_fn = tf.keras.losses.MeanSquaredError()
-for episode in range(10000, 20000):
+for episode in range(80000, 90000):
     obs = env.reset(-1, episode)
     #print('obs', obs)
     obs = tf.convert_to_tensor(obs, dtype=tf.float32)
@@ -117,7 +117,7 @@ for episode in range(10000, 20000):
     for step in range(26):
         epsilon = exploration_probability(episode, 100)
         obs, reward, done = play_one_step(env, obs, epsilon, episode)
-        if episode >= 19998:
+        if episode >= 89998:
             print('Q', epsilon_greedy_policy(obs))
         total_reward += reward
         if done:
@@ -125,8 +125,8 @@ for episode in range(10000, 20000):
         #print(replay_buffer)
     # extra code – displays debug info, stores data for the next figure, and
     #              keeps track of the best model weights so far
-    final_rewards.append(reward)
-    rewards.append(total_reward) # Note from Du 11/01/2025: as each step that we stay
+    #final_rewards.append(reward)
+    #rewards.append(total_reward) # Note from Du 11/01/2025: as each step that we stay
                          # in the game yields 1 reward point, appending the
                          # last step value is the same as appending the total
                          # reward for the current episode
@@ -141,30 +141,17 @@ import pickle
 with open('replay_buffer_' + action_type + '_dqn_' + reward_type + '_more_exploration.pkl', 'wb') as f:
     pickle.dump(replay_buffer, f)
 
-with open('train_reward_' + action_type + '_dqn_' + reward_type + '_more_exploration.pkl', 'wb') as f:
-    pickle.dump(rewards, f)
+#with open('train_reward_' + action_type + '_dqn_' + reward_type + '_more_exploration.pkl', 'wb') as f:
+    #pickle.dump(rewards, f)
 
-with open('train_final_reward_' + action_type + '_dqn_' + reward_type + '_more_exploration.pkl', 'wb') as f:
-    pickle.dump(final_rewards, f)
+#with open('train_final_reward_' + action_type + '_dqn_' + reward_type + '_more_exploration.pkl', 'wb') as f:
+    #pickle.dump(final_rewards, f)
 model.set_weights(best_weights)  # extra code – restores the best model weights
 
 # we expect len(replay_buffer) to be 2000 afeter 600 episodes
 print('The replay_buffer currently has', len(replay_buffer), 'items.')
 # extra code – this cell generates and saves Figure 18–10
-plt.figure(figsize=(8, 4))
-plt.plot(rewards)
-plt.xlabel("Episode", fontsize=14)
-plt.ylabel("Sum of rewards", fontsize=14)
-plt.grid(True)
-plt.show()
-plt.savefig('sum of rewards ' + action_type + ' dqn ' + reward_type + ' more exploration.png')
-plt.figure(figsize=(8, 4))
-plt.plot(final_rewards)
-plt.xlabel("Episode", fontsize=14)
-plt.ylabel("Final Reward", fontsize=14)
-plt.grid(True)
-plt.show()
-plt.savefig('sum of rewards ' + action_type + ' dqn ' + reward_type + ' more exploration.png')
+
 model.compile(optimizer='adam', loss='mse')
 model.save(action_type + '_dqn_' + reward_type + '_more_exploration.weights.keras')
 print('model trained and saved successfully')
